@@ -1,11 +1,6 @@
 package practicum.blog.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import practicum.blog.dto.post.PostDTO;
@@ -14,6 +9,7 @@ import practicum.blog.entity.Post;
 import practicum.blog.mapper.PostMapper;
 import practicum.blog.repository.PostRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,15 +25,19 @@ public class PostService {
     public Long create(PostRequestDTO dto) {
         var post = postMapper.toEntity(dto);
 
-        var tags = tagService.createMultipleFromString(dto.getTagsAsString());
-        post.setTags(tags);
-
         if (dto.getImage() != null) {
             post.setImagePath(fileService.uploadFile(dto.getImage()));
         }
 
-        return postRepository.save(post);
+        Long postId = postRepository.create(post);
+
+        var tags = tagService.createMultipleFromString(dto.getTagsAsString());
+
+        tagService.linkTagsToPost(postId, tags);
+
+        return postId;
     }
+
 
     @Transactional
     public PostDTO getById(long id) {
@@ -45,22 +45,26 @@ public class PostService {
         return postMapper.toDTO(post);
     }
 
-    public Page<PostDTO> getByTagName(String search, int pageNumber, int pageSize) {
-        Pageable pageable = PageRequest.of(pageNumber - 1, pageSize, Sort.by("createdAt").descending());
-
-        Page<Post> postPage;
+    public List<PostDTO> getByTagName(String search, int pageNumber, int pageSize) {
+        List<Post> posts;
 
         if (search.isBlank()) {
-            postPage = postRepository.findAll(pageable);
+            posts = postRepository.findAll(pageNumber, pageSize);
         } else {
-            postPage = postRepository.findByTagName(search, pageable);
+            posts = postRepository.findByTagName(search, pageNumber, pageSize);
         }
 
-        List<PostDTO> postDTOs = postPage.getContent().stream()
+        return posts.stream()
                 .map(postMapper::toDTO)
                 .collect(Collectors.toList());
+    }
 
-        return new PageImpl<>(postDTOs, pageable, postPage.getTotalElements());
+    public long countPostsByTag(String tagName) {
+        if (tagName.isBlank()) {
+            return postRepository.countAll();
+        } else {
+            return postRepository.countByTagName(tagName);
+        }
     }
 
     @Transactional
@@ -69,9 +73,10 @@ public class PostService {
 
         post.setTitle(dto.getTitle());
         post.setText(dto.getText());
+        post.setUpdatedAt(LocalDateTime.now());
 
         if (dto.getTagsAsString() != null) {
-            post.setTags(tagService.createMultipleFromString(dto.getTagsAsString()));
+            tagService.syncTagsWithPost(post.getId(), dto.getTagsAsString());
         }
 
         if (dto.getImage() != null) {
@@ -79,8 +84,9 @@ public class PostService {
             post.setImagePath(fileService.uploadFile(dto.getImage()));
         }
 
-        postRepository.save(post);
+        postRepository.update(post);
     }
+
 
     @Transactional
     public void updateLikes(Long postId, boolean like) {
@@ -92,9 +98,8 @@ public class PostService {
             post.setLikesCount(post.getLikesCount() - 1);
         }
 
-        postRepository.save(post);
+        postRepository.update(post);
     }
-
 
     @Transactional
     public void delete(Long id) {

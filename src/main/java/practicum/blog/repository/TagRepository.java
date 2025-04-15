@@ -3,21 +3,36 @@ package practicum.blog.repository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import practicum.blog.entity.Tag;
-import practicum.blog.jpa.TagJpaRepository;
+import practicum.blog.jdbc.TagJdbcRepository;
 
-import java.util.List;
 import java.util.Set;
 
 @Repository
 @RequiredArgsConstructor
 public class TagRepository {
-    private final TagJpaRepository tagJpaRepository;
+    private final TagJdbcRepository tagJdbcRepository;
 
     public Set<Tag> findMultipleByNames(Set<String> names) {
-        return tagJpaRepository.findAllByNameIn(names);
+        return tagJdbcRepository.findAllByNameIn(names);
     }
 
-    public void saveAll(List<Tag> tags) {
-        tagJpaRepository.saveAll(tags);
+    public void saveAll(Set<Tag> tags) {
+        tagJdbcRepository.saveAll(tags);
+    }
+
+    public void attachTagToPost(Long postId, Long tagId) {
+        tagJdbcRepository.attachTagToPost(postId, tagId);
+    }
+
+    public void unlinkTagsNotInList(Long postId, Set<String> tagNamesToKeep) {
+        tagJdbcRepository.unlinkTagsNotInList(postId, tagNamesToKeep);
+    }
+
+    public void unlinkAllTagsFromPost(Long postId) {
+        tagJdbcRepository.unlinkAllTagsFromPost(postId);
+    }
+
+    public void linkTagsToPost(Long postId, Set<Tag> tags) {
+        tagJdbcRepository.linkTagsToPost(postId, tags);
     }
 }

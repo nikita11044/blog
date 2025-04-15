@@ -45,7 +45,7 @@
                         <img height="300" th:src="${post.getImagePath()}">
                     </a>
                 </p>
-                <p th:text="${post.getText()}"></p>
+                <p th:text="${post.getTextPreview()}"></p>
                 <p>
                     <span th:text="${'&#x1F44D; '+post.getLikesCount()}"></span>
                     <span th:text="${'&#x2709; '+post.getComments().size()}"></span>

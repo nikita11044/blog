@@ -2,36 +2,50 @@ package practicum.blog.repository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import practicum.blog.entity.Post;
-import practicum.blog.jpa.PostJpaRepository;
+import practicum.blog.jdbc.PostJdbcRepository;
+
+import java.util.List;
 
 @Repository
 @RequiredArgsConstructor
 public class PostRepository {
-    private final PostJpaRepository postJpaRepository;
+    private final PostJdbcRepository postJdbcRepository;
 
     public Post findById(Long id) {
-        return postJpaRepository.findById(id).orElseThrow(
+        return postJdbcRepository.findById(id).orElseThrow(
                 () -> new EntityNotFoundException(String.format("Post not found by id: %s", id))
         );
     }
 
-    public Page<Post> findByTagName(String tagName, Pageable pageable) {
-        return postJpaRepository.findByTagName(tagName, pageable);
+    public List<Post> findByTagName(String tagName, int page, int size) {
+        int offset = (page - 1) * size;
+        return postJdbcRepository.findByTagName(tagName, size, offset);
     }
 
-    public Page<Post> findAll(Pageable pageable) {
-        return postJpaRepository.findAll(pageable);
+    public List<Post> findAll(int page, int size) {
+        int offset = (page - 1) * size;
+        return postJdbcRepository.findAll(size, offset);
     }
 
-    public Long save(Post post) {
-        return postJpaRepository.save(post).getId();
+    public Long create(Post post) {
+        return postJdbcRepository.create(post).getId();
+    }
+
+    public void update(Post post) {
+        postJdbcRepository.update(post);
     }
 
     public void deleteById(Long id) {
-        postJpaRepository.deleteById(id);
+        postJdbcRepository.deleteById(id);
+    }
+
+    public long countAll() {
+        return postJdbcRepository.countAll();
+    }
+
+    public long countByTagName(String tagName) {
+        return postJdbcRepository.countByTagName(tagName);
     }
 }

@@ -1,7 +1,6 @@
 package practicum.blog.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,6 +15,7 @@ import practicum.blog.dto.post.PostRequestDTO;
 import practicum.blog.service.CommentService;
 import practicum.blog.service.PostService;
 
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -34,19 +34,26 @@ public class PostController {
                            @RequestParam(name = "pageSize", defaultValue = "10") int pageSize,
                            @RequestParam(name = "pageNumber", defaultValue = "1") int pageNumber,
                            Model model) {
-        Page<PostDTO> postPage = postService.getByTagName(search, pageNumber, pageSize);
+        List<PostDTO> posts = postService.getByTagName(search, pageNumber, pageSize);
+        long totalPosts = postService.countPostsByTag(search);
 
-        model.addAttribute("posts", postPage.getContent());
+        int totalPages = (int) Math.ceil((double) totalPosts / pageSize);
+        boolean hasNext = pageNumber < totalPages;
+        boolean hasPrevious = pageNumber > 1;
+
+        model.addAttribute("posts", posts);
         model.addAttribute("search", search);
         model.addAttribute("paging", Map.of(
                 "pageNumber", pageNumber,
                 "pageSize", pageSize,
-                "hasNext", postPage.hasNext(),
-                "hasPrevious", postPage.hasPrevious()
+                "totalPages", totalPages,
+                "hasNext", hasNext,
+                "hasPrevious", hasPrevious
         ));
 
         return "posts";
     }
+
 
     @GetMapping("/posts/{id}")
     public String postPage(@PathVariable("id") Long id, Model model) {

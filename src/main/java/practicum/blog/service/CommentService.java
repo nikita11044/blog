@@ -8,6 +8,8 @@ import practicum.blog.entity.Comment;
 import practicum.blog.repository.CommentRepository;
 import practicum.blog.repository.PostRepository;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class CommentService {
@@ -19,11 +21,11 @@ public class CommentService {
         var post = postRepository.findById(dto.getPostId());
 
         var comment = Comment.builder()
-                .post(post)
+                .postId(post.getId())
                 .text(dto.getText())
                 .build();
 
-        commentRepository.save(comment);
+        commentRepository.create(comment);
     }
 
     @Transactional
@@ -31,8 +33,9 @@ public class CommentService {
         var comment = commentRepository.findById(dto.getId());
 
         comment.setText(dto.getText());
+        comment.setUpdatedAt(LocalDateTime.now());
 
-        commentRepository.save(comment);
+        commentRepository.update(comment);
     }
 
     public void delete(Long id, Long postId) {
