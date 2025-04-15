@@ -4,7 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import practicum.blog.entity.Tag;
-import practicum.blog.jpa.TagJpaRepository;
+import practicum.blog.jdbc.TagJdbcRepository;
 import practicum.blog.utils.BaseContextTest;
 
 import java.util.Arrays;
@@ -21,7 +21,7 @@ class TagRepositoryIntegrationTest extends BaseContextTest {
     private TagRepository tagRepository;
 
     @Autowired
-    private TagJpaRepository tagJpaRepository;
+    private TagJdbcRepository tagJdbcRepository;
 
     @BeforeEach
     void setUp() {
@@ -39,9 +39,9 @@ class TagRepositoryIntegrationTest extends BaseContextTest {
         Tag tag1 = createTag("Java");
         Tag tag2 = createTag("Spring");
 
-        tagRepository.saveAll(Arrays.asList(tag1, tag2));
+        tagRepository.saveAll(Set.of(tag1, tag2));
 
-        List<Tag> tags = tagJpaRepository.findAll();
+        Set<Tag> tags = tagJdbcRepository.findAll();
         assertEquals(2, tags.size());
         assertTrue(tags.stream().anyMatch(tag -> tag.getName().equals("Java")));
         assertTrue(tags.stream().anyMatch(tag -> tag.getName().equals("Spring")));
@@ -51,7 +51,8 @@ class TagRepositoryIntegrationTest extends BaseContextTest {
     void testFindMultipleByNames_shouldReturnTags() {
         Tag tag1 = createTag("Java");
         Tag tag2 = createTag("Spring");
-        tagRepository.saveAll(Arrays.asList(tag1, tag2));
+
+        tagRepository.saveAll(Set.of(tag1, tag2));
 
         Set<String> tagNames = new HashSet<>(Arrays.asList("Java", "Spring"));
         Set<Tag> foundTags = tagRepository.findMultipleByNames(tagNames);

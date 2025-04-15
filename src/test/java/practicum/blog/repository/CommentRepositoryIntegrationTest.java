@@ -3,28 +3,30 @@ package practicum.blog.repository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import practicum.blog.entity.Comment;
-import practicum.blog.jpa.CommentJpaRepository;
-import practicum.blog.jpa.PostJpaRepository;
+import practicum.blog.jdbc.CommentJdbcRepository;
+import practicum.blog.jdbc.PostJdbcRepository;
 import practicum.blog.utils.BaseContextTest;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@SpringBootTest
 public class CommentRepositoryIntegrationTest extends BaseContextTest {
 
     @Autowired
     private CommentRepository commentRepository;
 
     @Autowired
-    private CommentJpaRepository commentJpaRepository;
+    private CommentJdbcRepository commentJdbcRepository;
 
     @Autowired
-    private PostJpaRepository postJpaRepository;
+    private PostJdbcRepository postJdbcRepository;
 
     @BeforeEach
     void setUp() {
@@ -33,42 +35,47 @@ public class CommentRepositoryIntegrationTest extends BaseContextTest {
     }
 
     private Comment createComment(String text) {
-        return postJpaRepository.findById(1L)
+        return postJdbcRepository.findById(1L)
                 .map(post -> Comment.builder()
-                        .post(post)
+                        .postId(1L)
                         .text(text)
                         .build())
                 .orElseThrow(() -> new IllegalStateException("Mock post not found"));
     }
 
     @Test
-    void testSave_shouldSaveComment() {
+    void testCreate_shouldCreateComment() {
         Comment comment = createComment("This is a comment");
-        commentRepository.save(comment);
+        var savedCommentId = commentRepository.create(comment);
 
-        Optional<Comment> savedComment = commentJpaRepository.findById(comment.getId());
+        Optional<Comment> savedComment = commentJdbcRepository.findById(savedCommentId);
         assertTrue(savedComment.isPresent());
         assertEquals("This is a comment", savedComment.get().getText());
     }
 
     @Test
-    void testFindById_shouldReturnComment() {
+    void testUpdate_shouldUpdateCommentText() {
         Comment comment = createComment("This is a comment");
-        commentRepository.save(comment);
+        var savedCommentId = commentRepository.create(comment);
 
-        Comment foundComment = commentRepository.findById(comment.getId());
-        assertNotNull(foundComment);
-        assertEquals("This is a comment", foundComment.getText());
+        comment.setId(savedCommentId);
+        comment.setText("This is an updated comment");
+        comment.setUpdatedAt(LocalDateTime.now());
+        commentRepository.update(comment);
+
+        Optional<Comment> updatedComment = commentJdbcRepository.findById(comment.getId());
+        assertTrue(updatedComment.isPresent(), "Updated comment should exist.");
+        assertEquals("This is an updated comment", updatedComment.get().getText());
     }
 
     @Test
     void testDeleteById_shouldDeleteComment() {
         Comment comment = createComment("This is a comment to be deleted");
-        commentRepository.save(comment);
+        commentRepository.create(comment);
 
         commentRepository.deleteByIdAndPostId(comment.getId(), 1L);
 
-        Optional<Comment> deletedComment = commentJpaRepository.findById(comment.getId());
+        Optional<Comment> deletedComment = commentJdbcRepository.findById(comment.getId());
         assertFalse(deletedComment.isPresent(), "Comment should be deleted from the database.");
     }
 }

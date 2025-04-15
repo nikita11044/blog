@@ -28,6 +28,12 @@ public class TagJdbcRepository {
                     .updatedAt(rs.getObject("updated_at", LocalDateTime.class))
                     .build();
 
+    public Set<Tag> findAll() {
+        String sql = "SELECT * FROM tag";
+
+        return new HashSet<>(jdbcTemplate.query(sql, TAG_ROW_MAPPER));
+    }
+
     public Set<Tag> findAllByNameIn(Set<String> names) {
         if (names == null || names.isEmpty()) {
             return Collections.emptySet();

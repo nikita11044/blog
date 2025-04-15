@@ -11,13 +11,11 @@ import practicum.blog.repository.TagRepository;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
@@ -95,7 +93,7 @@ class TagServiceTest {
         assertTrue(result.contains(spring));
 
         verify(tagRepository).findMultipleByNames(tagNames);
-        verify(tagRepository).saveAll(Collections.emptyList());
+        verify(tagRepository).saveAll(Collections.emptySet());
     }
 
     @Test
@@ -105,7 +103,7 @@ class TagServiceTest {
         assertTrue(result.isEmpty());
 
         verify(tagRepository).findMultipleByNames(Collections.emptySet());
-        verify(tagRepository).saveAll(Collections.emptyList());
+        verify(tagRepository).saveAll(Collections.emptySet());
     }
 
     @Test
@@ -116,15 +114,15 @@ class TagServiceTest {
         when(tagRepository.findMultipleByNames(anySet())).thenReturn(existingTags);
 
         doAnswer(invocation -> {
-            List<Tag> tags = invocation.getArgument(0);
+            Set<Tag> tags = invocation.getArgument(0);
             existingTags.addAll(tags);
             return null;
-        }).when(tagRepository).saveAll(anyList());
+        }).when(tagRepository).saveAll(anySet());
 
         Set<Tag> result = tagService.createMultipleFromString(input);
 
         assertEquals(2, result.size());
         verify(tagRepository).findMultipleByNames(Set.of("spring", "java"));
-        verify(tagRepository).saveAll(anyList());
+        verify(tagRepository).saveAll(anySet());
     }
 }

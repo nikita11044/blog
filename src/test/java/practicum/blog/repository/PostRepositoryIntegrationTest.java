@@ -3,12 +3,12 @@ package practicum.blog.repository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import practicum.blog.entity.Post;
-import practicum.blog.jpa.PostJpaRepository;
+import practicum.blog.jdbc.PostJdbcRepository;
 import practicum.blog.utils.BaseContextTest;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,7 +22,7 @@ class PostRepositoryIntegrationTest extends BaseContextTest {
     private PostRepository postRepository;
 
     @Autowired
-    private PostJpaRepository postJpaRepository;
+    private PostJdbcRepository postJdbcRepository;
 
     @BeforeEach
     void setUp() {
@@ -39,11 +39,11 @@ class PostRepositoryIntegrationTest extends BaseContextTest {
     }
 
     @Test
-    void testSave_shouldSavePost() {
+    void testCreate_shouldCreatePost() {
         Post post = createPost("New Post", "This is a new post.");
 
-        Long savedPostId = postRepository.save(post);
-        Optional<Post> savedPost = postJpaRepository.findById(savedPostId);
+        Long savedPostId = postRepository.create(post);
+        Optional<Post> savedPost = postJdbcRepository.findById(savedPostId);
 
         assertTrue(savedPost.isPresent());
         assertEquals("New Post", savedPost.get().getTitle());
@@ -51,45 +51,51 @@ class PostRepositoryIntegrationTest extends BaseContextTest {
     }
 
     @Test
-    void testFindById_shouldReturnPost() {
-        Post post = createPost("Test Post", "Test content for the post.");
-        Long postId = postRepository.save(post);
-
-        Post foundPost = postRepository.findById(postId);
-
-        assertNotNull(foundPost);
-        assertEquals("Test Post", foundPost.getTitle());
-        assertEquals("Test content for the post.", foundPost.getText());
-    }
-
-    @Test
     void testFindAll_shouldReturnPagedPosts() {
-        Page<Post> page = postRepository.findAll(PageRequest.of(0, 10));
+        List<Post> posts = postRepository.findAll(1, 10);
+        long count = postRepository.countAll();
 
-        assertNotNull(page);
-        assertTrue(page.hasContent());
-        assertTrue(page.getTotalElements() > 0);
+        assertNotNull(posts);
+        assertFalse(posts.isEmpty());
+        assertTrue(count > 0);
     }
 
     @Test
     void testFindByTagName_shouldReturnPagedPostsByTag() {
-        Page<Post> page = postRepository.findByTagName("java", PageRequest.of(0, 10));
+        List<Post> posts = postRepository.findByTagName("java", 1, 10);
+        long count = postRepository.countByTagName("java");
 
-        assertNotNull(page);
-        assertTrue(page.hasContent());
+        assertNotNull(posts);
+        assertFalse(posts.isEmpty());
+        assertTrue(count > 0);
+    }
+
+    @Test
+    void testUpdate_shouldUpdatePost() {
+        Post post = createPost("Original Post", "Original content of the post.");
+        Long savedPostId = postRepository.create(post);
+
+        post.setId(savedPostId);
+        post.setText("Updated content of the post.");
+        post.setUpdatedAt(LocalDateTime.now());
+        postRepository.update(post);
+
+        Optional<Post> updatedPost = postJdbcRepository.findById(post.getId());
+        assertTrue(updatedPost.isPresent(), "Updated post should exist.");
+        assertEquals("Updated content of the post.", updatedPost.get().getText());
     }
 
     @Test
     void testDeleteById_shouldDeletePost() {
         Post post = createPost("Post to delete", "Text of the post to be deleted.");
-        Long postId = postRepository.save(post);
+        Long savedPostId = postRepository.create(post);
 
-        Optional<Post> savedPost = postJpaRepository.findById(postId);
-        assertTrue(savedPost.isPresent());
+        Optional<Post> savedPostOptional = postJdbcRepository.findById(savedPostId);
+        assertTrue(savedPostOptional.isPresent());
 
-        postRepository.deleteById(postId);
+        postRepository.deleteById(savedPostId);
 
-        Optional<Post> deletedPost = postJpaRepository.findById(postId);
+        Optional<Post> deletedPost = postJdbcRepository.findById(savedPostId);
         assertFalse(deletedPost.isPresent());
     }
 }

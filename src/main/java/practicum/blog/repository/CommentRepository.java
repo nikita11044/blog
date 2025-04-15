@@ -17,8 +17,8 @@ public class CommentRepository {
         );
     }
 
-    public void create(Comment comment) {
-        commentJdbcRepository.create(comment);
+    public Long create(Comment comment) {
+        return commentJdbcRepository.create(comment);
     }
 
     public void update(Comment comment) {

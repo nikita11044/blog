@@ -31,13 +31,13 @@ public class CommentJdbcRepository {
                 .findFirst();
     }
 
-    public void create(Comment comment) {
-        String sql = "INSERT INTO comment (text, post_id) VALUES (?, ?)";
-        jdbcTemplate.update(sql,
+    public Long create(Comment comment) {
+        String sql = "INSERT INTO comment (text, post_id) VALUES (?, ?) RETURNING id";
+        return jdbcTemplate.queryForObject(sql, Long.class,
                 comment.getText(),
-                comment.getPostId()
-        );
+                comment.getPostId());
     }
+
 
     public void update(Comment comment) {
         String sql = "UPDATE comment SET text = ?, updated_at = ? WHERE id = ?";

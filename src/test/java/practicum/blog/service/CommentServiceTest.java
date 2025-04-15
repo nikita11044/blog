@@ -12,7 +12,8 @@ import practicum.blog.entity.Post;
 import practicum.blog.repository.CommentRepository;
 import practicum.blog.repository.PostRepository;
 
-import static org.junit.Assert.assertEquals;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
@@ -44,7 +45,7 @@ class CommentServiceTest {
         comment = Comment.builder()
                 .id(1L)
                 .text("This is a comment")
-                .post(post)
+                .postId(1L)
                 .build();
 
         commentDTO = CommentDTO.builder()
@@ -61,7 +62,7 @@ class CommentServiceTest {
         commentService.create(commentDTO);
 
         verify(postRepository).findById(commentDTO.getPostId());
-        verify(commentRepository).save(any(Comment.class));
+        verify(commentRepository).create(any(Comment.class));
     }
 
     @Test
@@ -71,7 +72,7 @@ class CommentServiceTest {
         commentService.update(commentDTO);
 
         assertEquals("This is a new comment text", comment.getText());
-        verify(commentRepository).save(comment);
+        verify(commentRepository).update(comment);
     }
 
     @Test

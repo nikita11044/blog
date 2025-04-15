@@ -6,11 +6,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import practicum.blog.dto.post.PostDTO;
 import practicum.blog.dto.post.PostRequestDTO;
 import practicum.blog.entity.Post;
@@ -75,14 +70,14 @@ class PostServiceTest {
     @Test
     void create_ShouldSavePost() {
         when(postMapper.toEntity(any(PostRequestDTO.class))).thenReturn(post);
-        when(postRepository.save(any(Post.class))).thenReturn(post.getId());
+        when(postRepository.create(any(Post.class))).thenReturn(post.getId());
 
         Long result = postService.create(postRequestDTO);
 
         assertNotNull(result);
         assertEquals(1L, result);
         verify(tagService).createMultipleFromString(postRequestDTO.getTagsAsString());
-        verify(postRepository).save(post);
+        verify(postRepository).create(post);
     }
 
     @Test
@@ -100,29 +95,24 @@ class PostServiceTest {
 
     @Test
     void getByTagName_ShouldReturnPageOfPosts() {
-        Pageable pageable = PageRequest.of(0, 10, Sort.by("createdAt").descending());
-        Page<Post> page = new PageImpl<>(List.of(post), pageable, 1);
-
-        when(postRepository.findAll(pageable)).thenReturn(page);
+        when(postRepository.findAll(1, 10)).thenReturn(List.of(post));
         when(postMapper.toDTO(any(Post.class))).thenReturn(postDTO);
 
-        Page<PostDTO> result = postService.getByTagName("", 1, 10);
-
+        List<PostDTO> result = postService.getByTagName("", 1, 10);
         assertFalse(result.isEmpty());
-        assertEquals(1, result.getTotalElements());
-        verify(postRepository).findAll(pageable);
+        assertEquals(1, result.size());
+        verify(postRepository).findAll(1, 10);
     }
 
     @Test
     void update_ShouldApplyChangesAndSave() {
         when(postRepository.findById(1L)).thenReturn(post);
-        when(postRepository.save(any(Post.class))).thenReturn(1L);
 
         postService.update(postRequestDTO);
 
         assertEquals("Updated Title", post.getTitle());
         assertEquals("Updated Content", post.getText());
-        verify(postRepository).save(post);
+        verify(postRepository).update(post);
     }
 
     @Test
@@ -135,7 +125,7 @@ class PostServiceTest {
         postService.updateLikes(1L, false);
         assertEquals(0, post.getLikesCount());
 
-        verify(postRepository, times(2)).save(post);
+        verify(postRepository, times(2)).update(post);
     }
 
     @Test
