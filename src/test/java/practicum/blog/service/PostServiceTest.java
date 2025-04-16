@@ -38,6 +38,9 @@ class PostServiceTest {
     @Mock
     private TagService tagService;
 
+    @Mock
+    private CommentService commentService;
+
     @InjectMocks
     private PostService postService;
 
