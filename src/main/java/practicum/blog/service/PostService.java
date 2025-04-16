@@ -5,12 +5,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import practicum.blog.dto.post.PostDTO;
 import practicum.blog.dto.post.PostRequestDTO;
+import practicum.blog.entity.Comment;
 import practicum.blog.entity.Post;
+import practicum.blog.entity.Tag;
 import practicum.blog.mapper.PostMapper;
 import practicum.blog.repository.PostRepository;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,39 +25,34 @@ public class PostService {
     private final PostMapper postMapper;
     private final FileService fileService;
     private final TagService tagService;
+    private final CommentService commentService;
 
     @Transactional
     public Long create(PostRequestDTO dto) {
-        var post = postMapper.toEntity(dto);
-
-        if (dto.getImage() != null) {
-            post.setImagePath(fileService.uploadFile(dto.getImage()));
-        }
-
+        Post post = postMapper.toEntity(dto);
+        handleImageUpload(dto, post);
         Long postId = postRepository.create(post);
 
-        var tags = tagService.createMultipleFromString(dto.getTagsAsString());
-
+        Set<Tag> tags = tagService.createMultipleFromString(dto.getTagsAsString());
         tagService.linkTagsToPost(postId, tags);
 
         return postId;
     }
 
-
     @Transactional
     public PostDTO getById(long id) {
-        var post = postRepository.findById(id);
+        Post post = postRepository.findById(id);
+        enrichPostsWithTagsAndComments(List.of(post));
         return postMapper.toDTO(post);
     }
 
+    @Transactional
     public List<PostDTO> getByTagName(String search, int pageNumber, int pageSize) {
-        List<Post> posts;
+        List<Post> posts = search.isBlank()
+                ? postRepository.findAll(pageNumber, pageSize)
+                : postRepository.findByTagName(search, pageNumber, pageSize);
 
-        if (search.isBlank()) {
-            posts = postRepository.findAll(pageNumber, pageSize);
-        } else {
-            posts = postRepository.findByTagName(search, pageNumber, pageSize);
-        }
+        enrichPostsWithTagsAndComments(posts);
 
         return posts.stream()
                 .map(postMapper::toDTO)
@@ -60,16 +60,14 @@ public class PostService {
     }
 
     public long countPostsByTag(String tagName) {
-        if (tagName.isBlank()) {
-            return postRepository.countAll();
-        } else {
-            return postRepository.countByTagName(tagName);
-        }
+        return tagName.isBlank()
+                ? postRepository.countAll()
+                : postRepository.countByTagName(tagName);
     }
 
     @Transactional
     public void update(PostRequestDTO dto) {
-        var post = postRepository.findById(dto.getId());
+        Post post = postRepository.findById(dto.getId());
 
         post.setTitle(dto.getTitle());
         post.setText(dto.getText());
@@ -81,30 +79,46 @@ public class PostService {
 
         if (dto.getImage() != null) {
             fileService.deleteFile(post.getImagePath());
-            post.setImagePath(fileService.uploadFile(dto.getImage()));
+            handleImageUpload(dto, post);
         }
 
         postRepository.update(post);
     }
 
-
     @Transactional
     public void updateLikes(Long postId, boolean like) {
-        var post = postRepository.findById(postId);
+        Post post = postRepository.findById(postId);
 
-        if (like) {
-            post.setLikesCount(post.getLikesCount() + 1);
-        } else if (post.getLikesCount() > 0) {
-            post.setLikesCount(post.getLikesCount() - 1);
-        }
+        int likes = post.getLikesCount();
+        post.setLikesCount(like ? likes + 1 : Math.max(0, likes - 1));
 
         postRepository.update(post);
     }
 
     @Transactional
     public void delete(Long id) {
-        var post = postRepository.findById(id);
+        Post post = postRepository.findById(id);
         fileService.deleteFile(post.getImagePath());
         postRepository.deleteById(id);
+    }
+
+    private void enrichPostsWithTagsAndComments(List<Post> posts) {
+        if (posts.isEmpty()) return;
+
+        List<Long> postIds = posts.stream()
+                .map(Post::getId)
+                .collect(Collectors.toList());
+
+        Map<Long, Set<Tag>> tags = tagService.findTagsByPostIds(postIds);
+        Map<Long, Set<Comment>> comments = commentService.findCommentsByPostIds(postIds);
+
+        for (Post post : posts) {
+            post.setTags(tags.getOrDefault(post.getId(), new HashSet<>()));
+            post.setComments(comments.getOrDefault(post.getId(), new HashSet<>()));
+        }
+    }
+
+    private void handleImageUpload(PostRequestDTO dto, Post post) {
+        post.setImagePath(fileService.uploadFile(dto.getImage()));
     }
 }

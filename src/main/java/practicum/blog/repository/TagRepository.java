@@ -5,6 +5,8 @@ import org.springframework.stereotype.Repository;
 import practicum.blog.entity.Tag;
 import practicum.blog.jdbc.TagJdbcRepository;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Repository
@@ -34,5 +36,9 @@ public class TagRepository {
 
     public void linkTagsToPost(Long postId, Set<Tag> tags) {
         tagJdbcRepository.linkTagsToPost(postId, tags);
+    }
+
+    public Map<Long, Set<Tag>> findAllByPostIds(List<Long> postIds) {
+        return tagJdbcRepository.findAllByPostIdsIn(postIds);
     }
 }

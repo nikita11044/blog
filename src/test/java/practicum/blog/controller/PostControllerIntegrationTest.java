@@ -18,7 +18,7 @@ class PostControllerIntegrationTest extends BaseContextTest {
     @BeforeEach
     void setUpTestData() {
         dbHelper.clearAndResetDatabase();
-        dbHelper.createMockPostWithComment();
+        dbHelper.createMockPostPlain();
     }
 
     private MockMultipartFile getMockFile() {

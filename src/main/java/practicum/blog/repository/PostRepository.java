@@ -1,6 +1,5 @@
 package practicum.blog.repository;
 
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import practicum.blog.entity.Post;
@@ -15,13 +14,13 @@ public class PostRepository {
 
     public Post findById(Long id) {
         return postJdbcRepository.findById(id).orElseThrow(
-                () -> new EntityNotFoundException(String.format("Post not found by id: %s", id))
+                () -> new RuntimeException(String.format("Post not found by id: %s", id))
         );
     }
 
     public List<Post> findByTagName(String tagName, int page, int size) {
         int offset = (page - 1) * size;
-        return postJdbcRepository.findByTagName(tagName, size, offset);
+        return postJdbcRepository.findAllByTagName(tagName, size, offset);
     }
 
     public List<Post> findAll(int page, int size) {
@@ -46,6 +45,6 @@ public class PostRepository {
     }
 
     public long countByTagName(String tagName) {
-        return postJdbcRepository.countByTagName(tagName);
+        return postJdbcRepository.countAllByTagName(tagName);
     }
 }

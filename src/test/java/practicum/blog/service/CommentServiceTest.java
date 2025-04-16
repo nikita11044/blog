@@ -8,12 +8,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import practicum.blog.dto.comment.CommentDTO;
 import practicum.blog.entity.Comment;
-import practicum.blog.entity.Post;
+import practicum.blog.mapper.CommentMapper;
 import practicum.blog.repository.CommentRepository;
-import practicum.blog.repository.PostRepository;
-
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
@@ -26,22 +25,16 @@ class CommentServiceTest {
     private CommentRepository commentRepository;
 
     @Mock
-    private PostRepository postRepository;
+    private CommentMapper commentMapper;
 
     @InjectMocks
     private CommentService commentService;
 
     private CommentDTO commentDTO;
     private Comment comment;
-    private Post post;
 
     @BeforeEach
     void setUp() {
-        post = Post.builder()
-                .id(1L)
-                .title("Test post")
-                .build();
-
         comment = Comment.builder()
                 .id(1L)
                 .text("This is a comment")
@@ -57,12 +50,14 @@ class CommentServiceTest {
 
     @Test
     void create_ShouldSaveComment() {
-        when(postRepository.findById(commentDTO.getPostId())).thenReturn(post);
+        when(commentMapper.toEntity(any(CommentDTO.class))).thenReturn(comment);
+        when(commentRepository.create(any(Comment.class))).thenReturn(comment.getId());
 
-        commentService.create(commentDTO);
+        Long result = commentService.create(commentDTO);
 
-        verify(postRepository).findById(commentDTO.getPostId());
-        verify(commentRepository).create(any(Comment.class));
+        assertNotNull(result);
+        assertEquals(1L, result);
+        verify(commentRepository).create(comment);
     }
 
     @Test

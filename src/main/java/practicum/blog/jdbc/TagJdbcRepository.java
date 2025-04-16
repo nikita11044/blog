@@ -10,7 +10,10 @@ import practicum.blog.entity.Tag;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Repository
@@ -45,6 +48,31 @@ public class TagJdbcRepository {
         return new HashSet<>(jdbcTemplate.query(sql, TAG_ROW_MAPPER, names.toArray()));
     }
 
+    public Map<Long, Set<Tag>> findAllByPostIdsIn(List<Long> postIds) {
+        if (postIds == null || postIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        String sql = """
+            SELECT pt.post_id, t.id, t.name, t.created_at, t.updated_at
+            FROM post_tag pt
+            JOIN tag t ON pt.tag_id = t.id
+            WHERE pt.post_id IN (:postIds)
+        """;
+
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+                .addValue("postIds", postIds);
+
+        return namedParameterJdbcTemplate.query(sql, parameters, rs -> {
+            Map<Long, Set<Tag>> result = new HashMap<>();
+            while (rs.next()) {
+                long postId = rs.getLong("post_id");
+                Tag tag = TAG_ROW_MAPPER.mapRow(rs, rs.getRow());
+                result.computeIfAbsent(postId, k -> new HashSet<>()).add(tag);
+            }
+            return result;
+        });
+    }
 
     public void saveAll(Set<Tag> tags) {
         String sql = "INSERT INTO tag (name) VALUES (?) RETURNING id";

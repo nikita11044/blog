@@ -1,31 +1,28 @@
 package practicum.blog.service;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import practicum.blog.dto.comment.CommentDTO;
 import practicum.blog.entity.Comment;
+import practicum.blog.mapper.CommentMapper;
 import practicum.blog.repository.CommentRepository;
-import practicum.blog.repository.PostRepository;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class CommentService {
     private final CommentRepository commentRepository;
-    private final PostRepository postRepository;
+    private final CommentMapper commentMapper;
 
     @Transactional
-    public void create(CommentDTO dto) {
-        var post = postRepository.findById(dto.getPostId());
-
-        var comment = Comment.builder()
-                .postId(post.getId())
-                .text(dto.getText())
-                .build();
-
-        commentRepository.create(comment);
+    public Long create(CommentDTO dto) {
+        var comment = commentMapper.toEntity(dto);
+        return commentRepository.create(comment);
     }
 
     @Transactional
@@ -40,5 +37,9 @@ public class CommentService {
 
     public void delete(Long id, Long postId) {
         commentRepository.deleteByIdAndPostId(id, postId);
+    }
+
+    public Map<Long, Set<Comment>> findCommentsByPostIds(List<Long> postIds) {
+        return commentRepository.findAllByPostIds(postIds);
     }
 }

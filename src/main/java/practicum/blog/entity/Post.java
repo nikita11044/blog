@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.Set;
 
 @Getter
@@ -25,6 +24,6 @@ public class Post {
     private int likesCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private Set<Tag> tags = new HashSet<>();
-    private Set<Comment> comments = new HashSet<>();
+    private Set<Tag> tags;
+    private Set<Comment> comments;
 }
